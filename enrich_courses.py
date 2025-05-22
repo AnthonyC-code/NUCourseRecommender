@@ -11,7 +11,6 @@ META_JSON = "meta.json"
 
 df = pd.read_csv(RAW_CSV)
 
-# 1) split title_units → subject, catalog_num, title, units
 split_rx = re.compile(r"^([A-Z_]+)\s+([\dA-Z\-]+-?\d*)\s+(.+?)\s+\(([\d.]+|Variable) Unit")
 cols = df["title_units"].str.extract(split_rx)
 cols.columns = ["subject","catalog_num","title","units_raw"]
@@ -19,18 +18,14 @@ cols.columns = ["subject","catalog_num","title","units_raw"]
 df[["subject","catalog_num","title"]] = cols[["subject","catalog_num","title"]]
 df["units"] = pd.to_numeric(cols["units_raw"].where(cols["units_raw"]!="Variable"), errors="coerce")
 
-# 2) extract prerequisites if present
 df["prereq"] = df["description"].str.extract(r"Prerequisite[s]?:\s*(.*?)\.\s*$", expand=False)
 
-# 3) fill NaNs for convenience
 df["description"] = df["description"].fillna("")
 df["prereq"]      = df["prereq"].fillna("")
 
-# 4) Sentence-BERT embeddings
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 emb   = model.encode(df["description"].tolist(), show_progress_bar=True, convert_to_numpy=True)
 
-# 5) save artefacts
 df.to_csv(CLEAN_CSV, index=False)
 np.save(EMB_NPY, emb)
 
@@ -42,7 +37,6 @@ meta = {
 with open(META_JSON, "w") as f:
     json.dump(meta, f, indent=2)
 
-print("✅  wrote:")
 print("   ", CLEAN_CSV)
 print("   ", EMB_NPY)
 print("   ", META_JSON)
