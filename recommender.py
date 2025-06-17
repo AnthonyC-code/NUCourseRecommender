@@ -43,4 +43,4 @@ def recommend(subject: str, cat_num: str, k=5, w_dept=0.7, w_buzz=0.3):
     ]
 
 
-print(recommend("HISTORY","201-2",k=20))
+print(recommend("HISTORY","203-1",k=20))

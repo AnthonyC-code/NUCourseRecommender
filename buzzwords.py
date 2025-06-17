@@ -8,8 +8,7 @@ PKL_OUT = "courses_with_buzz.pkl"
 df = pd.read_csv(CSV_IN)
 df["description"] = df["description"].fillna("")
 
-# TF-IDF model 
-tok_pat = r"(?u)\b[a-zA-Z][a-zA-Z]+\b"      # tokens >=2 letters
+tok_pat = r"(?u)\b[a-zA-Z][a-zA-Z]+\b"
 vec = TfidfVectorizer(
         lowercase=True,
         token_pattern=tok_pat,
@@ -21,7 +20,6 @@ vec = TfidfVectorizer(
 tfidf  = vec.fit_transform(df["description"])
 vocab  = vec.get_feature_names_out()
 
-# per-course top-M keywords 
 M = 5
 top_kw = []
 for row in range(tfidf.shape[0]):
@@ -34,4 +32,4 @@ for row in range(tfidf.shape[0]):
 
 df["buzz"] = top_kw
 df.to_pickle(PKL_OUT)
-print(f"✅  wrote {PKL_OUT} with buzzword lists for {len(df)} courses")
+print(f"wrote {PKL_OUT} with buzzword lists for {len(df)} courses")

@@ -1,17 +1,13 @@
-# course_scraper.py  —  Northwestern course catalog 2024-25 → CSV
-# pip install requests beautifulsoup4 pandas tqdm
-
 import re, time, sys, requests, pandas as pd
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-BASE      = "https://catalogs.northwestern.edu"
+BASE = "https://catalogs.northwestern.edu"
 INDEX_URL = f"{BASE}/undergraduate/courses-az/"
-CSV_OUT   = "nu_courses_2024_25.csv"
+CSV_OUT = "nu_courses_2024_25.csv"
 
-# ───────────────────────────────────────────────────────── session + fetch
 def make_session():
     s = requests.Session()
     s.headers["User-Agent"] = "NUCourseScraper/0.5 (you@u.northwestern.edu)"
@@ -35,16 +31,15 @@ def fetch(url: str, tries: int = 3, timeout: tuple = (10, 120)) -> str | None:
             resp.raise_for_status()
             return resp.text
         except requests.RequestException:
-            time.sleep(2 * (attempt + 1))  # back-off 2 s, 4 s, 6 s
+            time.sleep(2 * (attempt + 1))
     tqdm.write(f"⚠️  skipping {url}")
     return None
 
 
-# ───────────────────────────────────────────────────────── discover links
 def get_subject_links() -> list[str]:
     html = fetch(INDEX_URL, tries=5)
     if not html:
-        sys.exit("❌  Could not fetch index page.")
+        sys.exit("Could not fetch index page.")
     soup = BeautifulSoup(html, "html.parser")
     links = {
         BASE + a["href"]
@@ -54,7 +49,6 @@ def get_subject_links() -> list[str]:
     return sorted(links)
 
 
-# ───────────────────────────────────────────────────────── parse subjects
 header_rx = re.compile(
     r"^([A-Z_]+)\s+([\dA-Z\-]+-?\d*)\s+(.+?)\s+\((?:\d+(?:\.\d+)?|Variable) Unit"
 )
@@ -69,8 +63,8 @@ def parse_subject(url: str) -> list[dict]:
     rows, current = [], None
     for line in lines:
         m = header_rx.match(line)
-        if m:  # start of a new course
-            if current:                             # save the previous one
+        if m:
+            if current:
                 rows.append(current)
             current = {
                 "subject":     m.group(1),
@@ -82,20 +76,19 @@ def parse_subject(url: str) -> list[dict]:
             # accumulate description until next header
             current["description"] += (" " if current["description"] else "") + line
 
-    if current:                                     # last course on the page
+    if current:
         rows.append(current)
     return rows
 
 
-# ───────────────────────────────────────────────────────── main driver
 def main():
     all_rows = []
     for link in tqdm(get_subject_links(), desc="Subjects"):
         all_rows.extend(parse_subject(link))
-        time.sleep(0.8)  # ~1 request/sec
+        time.sleep(0.8)
 
     pd.DataFrame(all_rows).to_csv(CSV_OUT, index=False)
-    tqdm.write(f"✅  saved {len(all_rows)} rows → {CSV_OUT}")
+    tqdm.write(f"saved {len(all_rows)} rows → {CSV_OUT}")
 
 
 if __name__ == "__main__":

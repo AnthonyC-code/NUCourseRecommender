@@ -4,18 +4,15 @@ from torch.utils.data import Dataset
 import numpy as np
 
 df = pd.read_pickle("courses_with_buzz.pkl")
-emb = np.load("embeddings.npy")                 # SBERT vectors
+emb = np.load("embeddings.npy")
 
-# -------- inverted index: buzzword -> list[row indices]
 inv = collections.defaultdict(list)
 for i, kws in enumerate(df["buzz"]):
     for kw in kws:
         inv[kw].append(i)
 
-# -------- keep only buzzwords that label >= 2 and <= 100 courses
 valid_kw = {k: v for k,v in inv.items() if 2 <= len(v) <= 100}
 
-# -------- map row -> positive list (union of its buzzword peers)
 pos_lists = []
 for i, kws in enumerate(df["buzz"]):
     pos = set()

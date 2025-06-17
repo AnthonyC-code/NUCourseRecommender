@@ -19,21 +19,22 @@ device = torch.device("cpu")
 class DeptTriplet(Dataset):
     """anchor & positive share the same 'subject' code."""
     def __init__(self, df, emb):
-        self.df   = df.reset_index(drop=True)
-        self.emb  = emb.astype("float32")
+        self.df = df.reset_index(drop=True)
+        self.emb = emb.astype("float32")
 
         by_subj = self.df.groupby("subject").groups
         self.pos_lists = [list(by_subj[s]) for s in self.df["subject"]]
 
         self.anchor = [i for i,l in enumerate(self.pos_lists) if len(l) > 1]
-        self.all    = list(range(len(df)))
+        self.all = list(range(len(df)))
 
-    def __len__(self): return len(self.anchor)
+    def __len__(self): 
+        return len(self.anchor)
 
     def __getitem__(self, n):
-        i   = self.anchor[n]
+        i = self.anchor[n]
         subj_list = [j for j in self.pos_lists[i] if j != i]
-        p   = random.choice(subj_list)
+        p = random.choice(subj_list)
 
         while True:
             neg = random.choice(self.all)
@@ -63,8 +64,8 @@ proj = nn.Sequential(
         nn.Linear(256,128)
 ).to(device)
 
-loss_fn  = nn.TripletMarginLoss(margin=MARGIN, p=2)
-opt      = optim.Adam(proj.parameters(), lr=LR)
+loss_fn = nn.TripletMarginLoss(margin=MARGIN, p=2)
+opt = optim.Adam(proj.parameters(), lr=LR)
 
 for epoch in range(1, EPOCHS+1):
     running = 0.0
@@ -72,7 +73,9 @@ for epoch in range(1, EPOCHS+1):
         a,p,n = a.to(device),p.to(device),n.to(device)
         la,lp,ln = proj(a),proj(p),proj(n)
         loss = loss_fn(la,lp,ln)
-        opt.zero_grad(); loss.backward(); opt.step()
+        opt.zero_grad(); 
+        loss.backward(); 
+        opt.step()
         running += loss.item()*a.size(0)
     print(f"Epoch {epoch:02d}  avg-loss {running/len(ds):.4f}")
 
